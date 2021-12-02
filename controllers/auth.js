@@ -2,6 +2,7 @@ const models = require('../models');
 const utils = require('../utils');
 const sgMail = require('@sendgrid/mail');
 const Redis = require('ioredis');
+const jwt = require('jsonwebtoken');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const redis = new Redis(process.env.REDIS_URL);
@@ -19,7 +20,7 @@ const signup = async (req, res) => {
       const savedAccount = await newAccount.save();
       const otp = Math.floor(100000 + Math.random() * 900000);
       const token = Math.random().toString(36).substr(2,7);
-      await redis.set(`SIGNUP_OTP_VERIFY_TOEKN_${email}_${token}`, otp, 'ex', 300);
+      await redis.set(`SIGNUP_OTP_VERIFY_TOKEN_${email}_${token}`, otp, 'ex', 300);
       const msg = {
         to: email, // Change to your recipient
         from: process.env.FROM_EMAIL, // Change to your verified sender
@@ -28,7 +29,7 @@ const signup = async (req, res) => {
         html: utils.templates.verifyAccountEmail(otp),
       }
       await sgMail.send(msg);
-      return res.statius(200).json({token, message: 'OTP send successfully to your email, please use this token and OTP to verify. OTP expires in 5 min'});
+      return res.status(200).json({token, message: 'OTP send successfully to your email, please use this token and OTP to verify. OTP expires in 5 min'});
     }
   }catch(err){
     return res.status(500);
@@ -44,12 +45,12 @@ const resendVerify = async (req, res) => {
     } else {
       const otp = Math.floor(100000 + Math.random() * 900000);
       const token = Math.random().toString(36).substr(2,7);
-      await redis.set(`SIGNUP_OTP_VERIFY_TOEKN_${email}_${token}`, otp, 'ex', 300);
+      await redis.set(`SIGNUP_OTP_VERIFY_TOKEN_${email}_${token}`, otp, 'ex', 300);
       const msg = {
         to: email, // Change to your recipient
         from: process.env.FROM_EMAIL, // Change to your verified sender
         subject: 'Please verify your email',
-        text: 'and easy to do anywhere, even with Node.js',
+        text: 'Please provide the OTP to signup',
         html: utils.templates.verifyAccountEmail(otp),
       }
       await sgMail.send(msg);
@@ -68,10 +69,10 @@ const verifyAccount = async (req, res) => {
     if(!account) {
       return res.status(404).json({error: 'Invalid request'});
     }
-    const realOtp = await redis.get(`SIGNUP_OTP_VERIFY_TOEKN_${email}_${token}`);
+    const realOtp = await redis.get(`SIGNUP_OTP_VERIFY_TOKEN_${email}_${token}`);
     if(realOtp && parseInt(realOtp) === otp) {
       await account.update({isVerified: true});
-      await redis.del(`SIGNUP_OTP_VERIFY_TOEKN_${email}_${token}`);
+      await redis.del(`SIGNUP_OTP_VERIFY_TOKEN_${email}_${token}`);
       return res.status(200).json({message: 'Account verifed successfully'});
     } else {
       return res.status(400).json({error: 'Invalid request'});
@@ -83,7 +84,54 @@ const verifyAccount = async (req, res) => {
 }
 
 const login = async (req, res) => {
-  res.json({success: true})
+  try{
+    const {email} = req.body;
+    const account = await models.Account.findOne({email})
+    if(!account) {
+      return res.status(404).json({error: 'Please create an account'});
+    } else {
+      const otp = Math.floor(100000 + Math.random() * 900000);
+      const token = Math.random().toString(36).substr(2,7);
+      await redis.set(`LOGIN_OTP_VERIFY_TOKEN_${email}_${token}`, otp, 'ex', 300);
+      const msg = {
+        to: email, // Change to your recipient
+        from: process.env.FROM_EMAIL, // Change to your verified sender
+        subject: 'Please provide otp to login',
+        text: 'Please provide the OTP to login',
+        html: utils.templates.verifyLoginEmail(otp),
+      }
+      await sgMail.send(msg);
+      return res.status(200).json({token, message: 'OTP send successfully to your email, please use this token and OTP to verify. OTP expires in 5 min'});
+    }
+  }catch(err){
+    return res.status(500);
+  }
+}
+
+const verifyLogin = async (req, res) => {
+  try {
+    const { email, otp, token } = req.body;
+    const account = await models.Account.findOne({email});
+    if(!account) {
+      return res.status(404).json({error: 'Invalid request'});
+    }
+    const realOtp = await redis.get(`LOGIN_OTP_VERIFY_TOKEN_${email}_${token}`);
+    console.log(account);
+    if(realOtp && parseInt(realOtp) === otp) {
+      const user = {
+        id: account._id,
+        email: account.email
+      }
+      const authToken = jwt.sign(user, process.env.TOKEN_SECRET);
+      await redis.del(`LOGIN_OTP_VERIFY_TOKEN_${email}_${token}`);
+      return res.status(200).json({message: 'User authenticated successfully', token: authToken});
+    } else {
+      return res.status(400).json({error: 'Invalid request'});
+    }
+  } catch(eror){
+    console.error(err);
+    return res.status(500);
+  }
 }
 
 module.exports = {
@@ -91,4 +139,5 @@ module.exports = {
   login,
   verifyAccount,
   resendVerify,
+  verifyLogin,
 }

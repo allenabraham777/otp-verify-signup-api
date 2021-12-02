@@ -15,6 +15,7 @@
     "ioredis": "^4.28.2",
     "jade": "~1.11.0",
     "joi": "^17.4.3",
+    "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.14",
     "morgan": "~1.9.1",
     "redis": "^4.0.0",
