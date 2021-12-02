@@ -2,14 +2,19 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const LikeSchema = new Schema({
-  liked: Boolean,
+  liked: {
+    type: Boolean,
+    required: true
+  },
   account_id: {
     type: Schema.Types.ObjectId,
-    ref: 'Account'
+    ref: 'Account',
+    required: true
   },
   post_id: {
     type: Schema.Types.ObjectId,
-    ref: 'Post'
+    ref: 'Post',
+    required: true
   }
 });
 

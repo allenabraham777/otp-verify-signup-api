@@ -125,7 +125,10 @@ const verifyLogin = async (req, res) => {
       await redis.del(`LOGIN_OTP_VERIFY_TOKEN_${email}_${token}`);
       const response = {
         message: 'User authenticated successfully',
-        token: authToken
+        token: authToken,
+        first_name: account.first_name,
+        last_name: account.last_name,
+        email: account.email
       }
       if(!account.isVerified) {
         response.isVerified = false;

@@ -14,7 +14,7 @@ module.exports =
       next();
     }
     if (params) {
-      status = Joi.object(params).validate(req.body);
+      status = Joi.object(params).validate(req.params);
       if (status.error) {
         return res.status(400).json({
           error: `Param Error: ${status.error.details[0].message}`,
