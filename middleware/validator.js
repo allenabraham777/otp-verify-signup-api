@@ -11,7 +11,6 @@ module.exports =
           error: `Payload Error: ${status.error.details[0].message}`,
         });
       }
-      next();
     }
     if (params) {
       status = Joi.object(params).validate(req.params);
@@ -20,6 +19,6 @@ module.exports =
           error: `Param Error: ${status.error.details[0].message}`,
         });
       }
-      next();
     }
+    next();
   };
