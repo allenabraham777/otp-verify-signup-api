@@ -58,7 +58,6 @@ const likePost = async (req, res) => {
 };
 
 const postComment = async (req, res) => {
-  return res.status(200).json({success: true})
   try {
     const { post_id } = req.params;
     const { comment } = req.body;
@@ -76,6 +75,24 @@ const postComment = async (req, res) => {
           comment: addedComment.comment,
           post_id: addedComment.post_id,
         },
+      });
+  } catch (error) {
+    console.error(error);
+    return res.sendStatus(500);
+  }
+};
+
+const getComments = async (req, res) => {
+  try {
+    const { post_id } = req.params;
+    const post = await models.Post.findOne({ _id: post_id });
+    if (!post) return res.status(404).json({ error: "No such post" });
+    const comments = await models.Comment.find({ post_id }).select("-__v");
+    return res
+      .status(200)
+      .json({
+        message: `Success`,
+        comments
       });
   } catch (error) {
     console.error(error);
@@ -107,4 +124,5 @@ module.exports = {
   likePost,
   postComment,
   deleteComment,
+  getComments
 };

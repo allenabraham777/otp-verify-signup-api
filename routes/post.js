@@ -44,6 +44,18 @@ router.post(
   controllers.post.postComment
 );
 
+router.get(
+  "/:post_id/comments",
+  middleware.validator({
+    params: {
+      post_id: Joi.string().required(),
+    }
+  }),
+  middleware.auth.isAuthenticated,
+  middleware.auth.isValidated,
+  controllers.post.getComments
+);
+
 router.delete(
   "/:post_id/comments/:comment_id",
   middleware.validator({
