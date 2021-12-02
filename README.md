@@ -1,12 +1,12 @@
 ## Tech Stacks
 
-Backend: NodeJS
-Database: MongoDB
-Caching: Redis
-Container: Docker
+- Backend: NodeJS
+- Database: MongoDB
+- Caching: Redis
+- Container: Docker
 
-Mailing Service: Send grid
-Hosting: Linode
+- Mailing Service: Send grid
+- Hosting: DigitalOcean
 
 ## Setting Up
 
